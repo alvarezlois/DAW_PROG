@@ -1,0 +1,29 @@
+HOWTO: Configurar Variables de Entorno para JAVA en Linux ( Slackware )
+Este proceso consiste en configurar el archivo que contiene las variables de entorno para poder compilar desde cualquier lugar en consola.
+1. Loguearse como root
+2. Editar el archivo que contenga estas variables especificas para el usuario que va a utilizar el JDK.( En mi caso que manejo Slackware es /etc/profile )
+Asi es que lo editamos con VI:
+# nano ~/.bashrc
+3. Agregamos al final, las siguientes lineas en el archivo(los directorios se 
+modifican segun el caso):
+
+JAVA_HOME="/home/usuario/jdk6"
+CLASSPATH="."
+PATH="$PATH:/home/usuario/jdk6/bin"
+export JAVA_HOME
+export CLASSPATH
+export PATH
+
+Explicando las lineas:
+JAVA_HOME="/home/usuario/jdk6" se refiere a poner como directorio por default de Java a el lugar donde se encuentra la instalacion.
+
+CLASSPATH="." el directorio de la ubicacion de las clases. Es importante recalcar que cuando Java se compila, se generan bytecodes o archivos .class que son portables, y que cuando se compila un archivo Java en linea de comandos, el archivo .class se genera en el mismo directorio en donde se encuentra el .java. El "." indica que se buscaran las clases en el
+directorio actual. Osea, donde se compiló el .java.
+
+PATH="$PATH:/home/usuario/jdk6/bin" el PATH ubica el directorio en
+donde se encuentran los comandos como el javac, java, jar etc.
+4. Guardamos los cambios e iniciamos la sesion de nuevo, ya no como root, sino como el usuario.
+5. Verificamos que las variables esten correctas . Escribimos:
+$java -version ( nos debe mostrar la version )
+$javac -version(nos debe mostrar la version)
+Si Muestra los resultados, todo funciona a la perfeccion , de lo contrario hay algo mal en el procedimiento.

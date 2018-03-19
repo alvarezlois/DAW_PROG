@@ -1,0 +1,160 @@
+NOTA: NON está probado. Facede os cambios e si non vos funciona comentade os erros que 
+tivéchedes que correxir, ou que non fostes capaces de resolver.
+
+
+MODIFICACIÓNS EN Database.java
+
+	/**
+		@@ DEBEMOS FACELO PUBLICO en Database.java
+	*/
+   public void saveCliente(Cliente cl) throws DatabaseException {
+      try {
+         f.writeString(cl.getDni(),9);
+         f.writeString(cl.getNome(),80);
+         f.writeString(cl.getDireccion(),40);
+         f.writeString(cl.getTelefono(),15);
+         f.writeDouble(cl.getDeuda());
+      } catch (IOException e) {
+         throw new DatabaseException("Erro escribindo ("+e.getMessage()+")");
+      }
+   }
+
+
+MODIFICACIÓNS/ENGADIDOS A ClientesEmpresa.java
+
+	/**
+		@@ Visualiza o Menú
+	*/
+   static int menu() {
+         int op=0;
+
+         System.out.println("ELIXE OPCIÓN: ");
+         System.out.println("1.- Engadir Cliente ");
+         System.out.println("2.- Listar Cliente ");
+         System.out.println("3.- Buscar Cliente ");
+         System.out.println("4.- Borrar Cliente ");
+			System.out.println("5.- Modificar Cliente");
+         System.out.println("6.- Eliminar Datos ");
+         System.out.println("7.- Saír ");
+         try {
+            op=Integer.parseInt(in.readLine());
+         } catch(Exception e) {
+            System.out.println("Opción errónea");
+         }
+         return op;
+   }
+
+	/**
+		@@ Entrada de datos de clientes para altas/modificacións. Si o cliente
+		xa existe, estaremos posicionados xusto antes de el, porque acabamos
+		de buscalo (ver método search en Database.java)
+	*/
+	public static void gardaCliente(String dni) throws Exception {
+      String nome;
+      String direccion;
+      String telefono;
+
+		System.out.println("Nome? :"); nome=in.readLine();
+      System.out.println("Dirección? :"); direccion=in.readLine();
+      System.out.println("Teléfono? :"); telefono=in.readLine();
+      cl=new Cliente(dni,nome,direccion,telefono); 
+      db.saveCliente(cl);
+	}
+
+	/**
+		@@ Pide datos do novo cliente e os garda na BBDD
+	*/
+   public static void novoCliente() {
+      String dni;
+      Cliente cl;
+
+      try {
+         System.out.println("NOVO CLIENTE:");
+         System.out.println("DNI? :"); dni=in.readLine();
+			// Esto únicamente sirve para evitar pedir o resto de datos si o dni xa existe...
+         try {
+            db.search(dni); // O método search de Database debe retornar o Cliente co dni, ou lanzar unha excepción con código 1 si non existe.
+            System.out.println("O Cliente xa existe. Desexas modificalo? (s/n)");
+				if (in.readLine().toUpperChar().charAt(0) == 'S') gardaCliente(dni);
+         } catch(DatabaseException e) {
+            if (e.getCode()==1) { // getCode é un método de DatabaseException que devolve o código da excepción. 1 indica DNI Erróneo
+					// Si non o atopamos, estaremos situados ao final do ficheiro
+               gardaCliente(dni);
+            } else throw e;
+         }
+      } catch (ClienteException e) {
+         System.out.println("Cliente Erróneo: "+e.getMessage());
+      } catch (IOException e) {
+         System.out.println("Erro na entrada de datos");
+      } catch (DatabaseException e) {
+         System.out.println("Erro gardando datos: "+e.getMessage());
+      } 
+   }
+
+	/** @@ modificacion de cliente
+	*/
+	public static void modificaCliente() {
+ 		String dni;
+      Cliente cl;
+
+      try {
+         System.out.println("NOVO CLIENTE:");
+         System.out.println("DNI? :"); dni=in.readLine();
+			// Esto únicamente sirve para evitar pedir o resto de datos si o dni xa existe...
+         try {
+            cl=db.search(dni); // O método search de Database debe retornar o Cliente co dni, ou lanzar unha excepción con código 1 si non existe.
+            System.out.println("Os datos actuais do cliente son "+cl+"\n\nSeguro que Desexas modificalo? (s/n)");
+				if (in.readLine().toUpperChar().charAt(0) == 'S') gardaCliente(dni);
+         } catch(DatabaseException e) {
+          	System.out.println("O Cliente non se atopa");
+         }
+      } catch (ClienteException e) {
+         System.out.println("Cliente Erróneo: "+e.getMessage());
+      } catch (IOException e) {
+         System.out.println("Erro na entrada de datos");
+      } catch (DatabaseException e) {
+         System.out.println("Erro gardando datos: "+e.getMessage());
+      } 
+	}
+
+	/**
+		@@ Programa principal: Visualiza o menú e leva a cabo as accións requeridas
+	*/
+   public static void main(String[] args) {
+      int op;
+      try {
+         db=new Database(); // Creamos o obxecto Database para acceder ós datos
+         do {
+            op=menu();
+            switch(op) {
+               case 1:
+                  novoCliente();
+                  break;
+               case 2:
+                  listadoClientes();
+                  break;
+               case 3:
+                  buscaCliente();
+                  break;
+               case 4:
+                  borraCliente();
+                  break;
+					case 5: 
+						modificaCliente();
+						break;
+               case 6:
+                  clean();
+                  break;
+            }
+         } while(op!=7);
+      } catch (Exception e) {
+         System.out.println("ERRO: "+e.getMessage());
+      } finally {
+         try {
+            if (db!=null) db.close(); // Pechamos o obxecto Database
+         } catch (Exception e) {
+            System.out.println("Erro pechando ficheiro ("+e.getMessage()+")");
+         }
+      }
+   }
+}

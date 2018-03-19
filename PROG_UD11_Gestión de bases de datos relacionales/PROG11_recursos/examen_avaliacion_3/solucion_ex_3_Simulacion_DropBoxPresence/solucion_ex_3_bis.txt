@@ -1,0 +1,33 @@
+EXERCICIO 3 - Con "Simulación" da clase DropBoxPresence
+Esta solución proporciona a Aplicación Completa cunha clase "DropBoxPresence" para poder probar a aplicación.
+
+ 
+
+ 
+ControlPresencialControlPresencial
+ 
+Accionista.javaAccionista.java
+ 
+DropBoxPresence.javaDropBoxPresence.java
+ 
+KeepPresence.javaKeepPresence.java
+ 
+Persoal.javaPersoal.java
+ 
+Traballador.javaTraballador.java
+ 
+Xefe.javaXefe.java
+ 
+TecnoWorkDriverTecnoWorkDriver
+ 
+Manager.javaManager.java
+ 
+PresenceControl.javaPresenceControl.java
+ 
+TecnoWork.javaTecnoWork.java
+ 
+TecnoWorkControlDriver.javaTecnoWorkControlDriver.java
+ 
+TecnoWorkControlManager.javaTecnoWorkControlManager.java
+ 
+TWDriver.java

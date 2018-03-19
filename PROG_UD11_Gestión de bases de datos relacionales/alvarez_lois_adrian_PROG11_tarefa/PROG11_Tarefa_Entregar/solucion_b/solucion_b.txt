@@ -1,0 +1,9 @@
+A solución "definitiva" ao exercicio  se consigue simplemente cunha implementación correcta do interface Database na clase MySQLDB.java
+
+Para non perder a funcionalidade implementada na solucion anterior, se renombra a clase a VolatileDB.java. A aplicación podería gardar os datos de xeito volátil como a solución anterior instanciando na clase pirncipal
+
+Database db=VolatileDB.getInstance();
+
+ou nunha base de datos relacional, neste caso MySQL mediante:
+
+Database db=MySQLDB.getInstance();

@@ -1,0 +1,23 @@
+EXERCICIO 3
+Solución ao exercicio 3.
+
+Unicamente engado as clases engadidas ou modificadas a partir do exercicio 2
+
+ 
+
+ 
+ControlPresencialControlPresencial
+ 
+Accionista.javaAccionista.java
+ 
+KeepPresence.javaKeepPresence.java
+ 
+Persoal.javaPersoal.java
+ 
+Traballador.javaTraballador.java
+ 
+Xefe.javaXefe.java
+ 
+TecnoWorkDriverTecnoWorkDriver
+ 
+PresenceControl.javaPresenceControl.java

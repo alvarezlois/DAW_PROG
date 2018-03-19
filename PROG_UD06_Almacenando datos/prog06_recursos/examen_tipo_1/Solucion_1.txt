@@ -1,0 +1,222 @@
+1.-  
+		a) Podería ser de calqueira tipo, xa que non precisamos acceso directo nin modificar os datos,pero si utilizamos ObjectInputStream/ObjectOutputStream necesitaríamos extender a clase para que non creara cabeceira ao engadir clientes. E os tipos orientados a texto. Utilizaría DataInputStream/DataOutputStream, xa que os seus métodos me ofrecen un acceso cómodo á información.
+		b) A razón principal é que RandomAccessFile propociona a posibilidade de modificar as reservas e o contador de reservas dun xeito rápido e simple.
+		c) Porque as habitacións son sempre as mesmas, e non é necesario habitualmente modificalas nin engadir novas.
+
+2.- 
+
+
+	a)
+package hotel.errors;
+
+public class ReservaException extends Exception {
+	public ReservaException(String msg) {
+		super(msg);
+	}
+}
+
+
+package hotel.errors;
+
+public class ClienteException extends Exception {
+	public static final int NOTFOUND=1;
+
+	int errcode=0; // Quero distinguir uns erros de outros. De momento so NOTFOUND para cliente non atopado
+
+	public ClienteException(String msg) {
+		super(msg);
+	}
+
+	public ClienteException(String msg,int code) {
+		super(msg);
+		errcode=code;
+	}
+	
+	public int getCode() {
+		return errcode;
+	}
+}
+
+	b) 
+	// Non sempre é necesario cargar os obxectos Cliente e Habitación ao completo
+	//
+	private int nh;
+	private String dni;
+
+	/** Constructor por defecto
+	*/
+	public Reserva() {
+	}
+
+	/** Constructor
+			Crea o obxecto Reserva identificado por numreserva consultando os datos en reservas.dat. 
+			Si a reserva non existe, lanzará unha ReservaException.
+	*/
+	public Reserva(int numReserva) throws ReservaException {
+		RandomAccessData f=null;
+		if (numReserva==0) throw new ReservaException("Non se poden dar de alta reservas con numero 0");
+		try {
+			f=new RandomAccessData(new File(FILENAME),"rw");
+			this.numReserva=numReserva;
+
+			// Buscamos a reserva...
+			search(f);
+
+			// Recuperamos o Obxecto Cliente e Habitación
+			//
+			this.cliente=new Cliente(this.dni);
+			this.habitacion=new Habitacion(this.nh);
+		} catch(EOFException e) {
+			throw new ReservaException("Non se atopa a reserva");
+		} catch (Exception e) {
+			throw new ReservaException("ERRO cargando reserva ("+e.getMessage()+")");
+		} finally {
+			close(f);
+		}
+	}
+
+	/** Constructor
+			Crea o obxecto Reserva coa información suministrada e a almacena no ficheiro reservas.dat xenerando o número de reserva apropiado. 
+			Si algo falla lanzará unha ReservaException
+	*/
+	public Reserva(Cliente cliente,Habitacion habitacion,Date entrada, Date saida) throws ReservaException {
+		this.cliente=cliente;
+		this.habitacion=habitacion;
+		this.entradaReserva=entrada;
+		this.saidaReserva=saida;
+		save();
+	}
+
+	/** read
+		Lee unha Reserva do ficheiro na posición actual
+		Fai uso de nh e dni para evitar cargar todos os datos do Cliente ou da Habitación si non é
+		necesario
+		private int nh;
+		private String dni;
+	*/
+
+	private void read(RandomAccessData f) throws Exception {
+		String date;
+
+		this.numReserva=f.readInt();
+		this.nh=f.readInt();
+		this.dni=f.readString(9);
+		this.entradaReserva=new DateString(f.readString(10)).getDate();
+		this.saidaReserva=new DateString(f.readString(10)).getDate();
+		date=f.readString(10); 
+		if (date.equals("")) this.entrada=null;
+		else						this.entrada=new DateString(date).getDate();
+		date=f.readString(10);
+		if (date.equals("")) this.saida=null;
+		else						this.saida=new DateString(date).getDate();
+
+	}	
+
+	/**
+		Lee o rexistro  numreserva
+	*/
+	private void search(RandomAccessData f) throws ReservaException,EOFException {
+		int numreserva=this.numReserva;
+		try {
+			f.seek(4); // Saltamos o contador de reservas do inicio do ficheiro
+			read(f);
+			while(this.numReserva!=numreserva) read(f);
+			f.lseek(-1,SIZERESERVA);
+		} catch (Exception e) {
+			throw new ReservaException("ERRO cargando reserva ("+e.getMessage()+")");
+		}
+	}
+
+
+c) 
+/** save
+		Almacena a información do obxecto no ficheiro reservas.dat de xeito apropiado, 
+		reutilizando o espacio das reservas borradas (numero de reserva a 0), 
+		xenerando o número de reserva e actualizando o contador do inicio do ficheiro.
+		si funciona correctamente devolverá o número de reserva xenerado, en caso de erro lanza unha ReservaException.
+	*/
+	private int save() throws ReservaException {
+		RandomAccessData f=null;
+		numReserva=0;
+		try {
+			f=new RandomAccessData(new File(FILENAME),"rw");
+			if (f.length()==0) {
+				numReserva=1;
+				f.writeInt(2);
+			} else {
+				numReserva=f.readInt();									
+				f.seek(0);
+				f.writeInt(numReserva+1);
+			}
+			posicionInsercion(f);
+			write(f);
+		} catch(EOFException e) {
+			throw new ReservaException("O Ficheiro non ten reservas");
+		} catch (Exception e) {
+			throw new ReservaException("ERRO cargando reserva ("+e.getMessage()+")");
+		} finally {
+			close(f);
+		}
+		return numReserva;
+	}
+
+d) 
+	/** listaReservas
+			Devolve un ArrayList cos obxectos Reserva activos correspondentes ao cliente co dni indicado
+			Lista todas as reservas que fixo o cliente co dni indicado, aínda que xa foran utilizadas (non as canceladas)
+	*/
+	public static ArrayList <Reserva> listaReservas(String dni) throws ReservaException {
+		RandomAccessData f=null;
+		ArrayList <Reserva> lista=new ArrayList <Reserva>();
+		Reserva r=new Reserva();
+		try {
+			f=new RandomAccessData(new File(FILENAME),"rw");
+			r.start(f);
+			while(true) {
+				r.read(f);
+				// A reserva corresponde co cliente, e é unha reserva 'activa'
+				if ((r.getNumReserva()!=0) && dni.equals(r.dni)) {
+					r.cliente=new Cliente(r.dni);
+					r.habitacion=new Habitacion(r.nh);
+					lista.add(r);
+					r=new Reserva();
+				}
+			}
+		} catch(EOFException e) {
+		} catch(Exception e) {
+			throw new ReservaException("Error cargando Lista ("+e.getMessage()+")");
+		} finally {
+			r.close(f);
+		}
+		return lista;
+	}
+
+	/** listaReservas
+			Devolve un ArrayList cos obxectos Reserva activos correspondentes a habitación indicada
+			So lista as reservas 'activas', e decir que non foron anuladas nin utilizadas....
+	*/
+	public static ArrayList <Reserva> listaReservas(int numhabitacion) throws ReservaException {
+		RandomAccessData f=null;
+		ArrayList <Reserva> lista=new ArrayList <Reserva>();
+		Reserva r=new Reserva();
+		try {
+			f=new RandomAccessData(new File(FILENAME),"rw");
+			r.start(f);
+			while(true) {
+				r.read(f);
+				// A reserva corresponde coa habitación cliente, e é unha reserva 'activa'
+				if ((r.getNumReserva()!=0) && (r.nh==numhabitacion) && (r.getSaida()==null)) {
+					r.cliente=new Cliente(r.dni);
+					r.habitacion=new Habitacion(r.nh);
+					lista.add(r);
+					r=new Reserva();
+				}
+			}
+		} catch(EOFException e) {
+		} catch(Exception e) {
+			throw new ReservaException("Error cargando Lista ("+e.getMessage()+")");
+		} finally {
+			r.close(f);
+		}
+		return lista;
+	}

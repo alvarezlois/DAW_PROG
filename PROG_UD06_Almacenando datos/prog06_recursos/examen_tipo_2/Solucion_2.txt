@@ -1,0 +1,119 @@
+	/** entrada
+			Procesa a reserva creando a entrada correspondente en ocupacion.dat 
+	*/
+	public void entrada() throws ReservaException {
+		RandomAccessData f=null;
+		Date hoxe=new Date();
+		if (this.numReserva==0) throw new ReservaException("ERRO: A Reserva está anulada");
+		try {
+			f=new RandomAccessData(new File(FILENAME),"rw");
+			search(f);	
+			// Si xa fixo a entrada no hotel, non se facer a entrada de novo.
+			if (this.entrada!=null) throw new ReservaException("Esta reserva xa foi ocupada");
+			// A reserva ten que ser para hoxe
+			if (DateString.compareTo(hoxe,this.entradaReserva) != 0) throw new ReservaException("A data da reserva non é para hoxe");
+			this.entrada=hoxe;	// Facemos a entrada
+			write(f);
+		} catch(EOFException e) {
+			throw new ReservaException("Non se atopa a reserva");
+		} catch (Exception e) {
+			throw new ReservaException("ERRO cargando reserva ("+e.getMessage()+")");
+		} finally {
+			close(f);
+		}
+	}
+
+
+	/** cancel
+			Cancela a reserva poñendo en reservas.dat (e no propio obxecto) o número de reserva a 0.
+	*/
+	public void cancel() throws ReservaException {
+		RandomAccessData f=null;
+		if (this.numReserva==0) throw new ReservaException("ERRO: A Reserva xa está anulada");
+		try {
+			f=new RandomAccessData(new File(FILENAME),"rw");
+			search(f);	
+			// Si xa fixo a entrada no hotel, non se pode anular. Se poderían considerar tamén datas límite.
+			if (this.entrada!=null) throw new ReservaException("Imposible anular: Xa se efectuou a entrada nesta reserva.");
+			f.writeInt(0);					// Anulamos escribindo un 0 encima do número de reserva
+			this.numReserva=0;
+		} catch(EOFException e) {
+			throw new ReservaException("Non se atopa a reserva");
+		} catch (Exception e) {
+			throw new ReservaException("ERRO cargando reserva ("+e.getMessage()+")");
+		} finally {
+			close(f);
+		}
+	}
+
+
+	/** close
+			Pecha o ficheiro si está aberto
+	*/
+	private void close(RandomAccessData f) throws ReservaException {
+		if (f!=null) {
+			try { 
+				f.close(); 
+			} catch (Exception e) { 
+				throw new ReservaException("ERROR: "+e.getMessage()); 
+			}
+		}
+	}
+
+	/** read
+		Lee unha Reserva do ficheiro na posición actual
+	*/
+
+	private int nh;
+	private String dni;
+
+	private void read(RandomAccessData f) throws Exception {
+		String date;
+
+		this.numReserva=f.readInt();
+		this.nh=f.readInt();
+		this.dni=f.readString(9);
+		this.entradaReserva=new DateString(f.readString(10)).getDate();
+		this.saidaReserva=new DateString(f.readString(10)).getDate();
+		date=f.readString(10); 
+		if (date.equals("")) this.entrada=null;
+		else						this.entrada=new DateString(date).getDate();
+		date=f.readString(10);
+		if (date.equals("")) this.saida=null;
+		else						this.saida=new DateString(date).getDate();
+
+	}	
+
+	/** write
+		Escribe o obxecto actual no ficheiro na posición actual
+	*/
+	private void write(RandomAccessData f) throws Exception {
+		f.writeInt(numReserva);
+		f.writeInt(habitacion.getNumero());
+		f.writeString(cliente.getDni(),9);
+		f.writeString(new DateString(entradaReserva).toString(), 10);
+		f.writeString(new DateString(saidaReserva).toString(), 10);
+		f.writeString(new DateString(entrada).toString(), 10);
+		f.writeString(new DateString(saida).toString(), 10);
+		
+	}
+
+	/**
+		Lee o rexistro  numreserva
+	*/
+	private void search(RandomAccessData f) throws ReservaException,EOFException {
+		int numreserva=this.numReserva;
+		try {
+			f.seek(4); // Saltamos o contador de reservas do inicio do ficheiro
+			read(f);
+			while(this.numReserva!=numreserva) read(f);
+			f.lseek(-1,SIZERESERVA);
+		} catch (Exception e) {
+			throw new ReservaException("ERRO cargando reserva ("+e.getMessage()+")");
+		}
+	}
+
+
+
+
+

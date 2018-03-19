@@ -1,0 +1,23 @@
+EXERCICIO 2 - Solución con Clases Auxiliares
+Esta solución incorpora o software que iría no aparello e un "simulador". A aplicación se arranca con:
+
+java TecnoWorkDriver/TecnoWork
+
+que ten a clase de "arranque do sistema"
+
+ 
+
+ 
+TecnoWorkDriverTecnoWorkDriver
+ 
+Manager.javaManager.java
+ 
+PresenceControl.javaPresenceControl.java
+ 
+TecnoWork.javaTecnoWork.java
+ 
+TecnoWorkControlDriver.javaTecnoWorkControlDriver.java
+ 
+TecnoWorkControlManager.javaTecnoWorkControlManager.java
+ 
+TWDriver.javaTWDriver.java

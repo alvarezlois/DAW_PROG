@@ -1,0 +1,4 @@
+EXERCICIO 4
+Clase MySQLPresence.
+
+É o único cambio necesario respecto ao exercicio 3, salvo unha liña na clase PresenceControl. Esta clase está sin testar, pero en principio é correcta.

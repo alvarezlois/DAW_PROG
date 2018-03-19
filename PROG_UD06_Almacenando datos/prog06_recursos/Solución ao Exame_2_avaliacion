@@ -1,0 +1,320 @@
+1.- 
+
+	clientes.dat - 
+
+		DataInputStream/DataOutputStream, xa que non preciso modificar os datos dos clientes prácticamente nunca e o acceso sempre será secuencial
+   habitacións.dat - 
+
+		Podería ser tamén DataInputStream/OutputStream, pero utilizarei ObjectInputStream, xa que as habitacións son fixas e raramente engadirei novas
+		e o acceso sempre será secuencial
+
+	reservas.dat - 
+		RandomAccessFile, xa que preciso modificar frecuentemente a cabeceira do ficheiro e as reservas xa gardadas, e os outros tipos de acceso non
+		me permiten posicionarme no ficheiro nin modificalo con facilidade.
+
+2.- 
+	/** saida
+			Modifica o rexistro correspondente en ocupacion.dat para poñer a data de saída (a de hoxe)
+	*/
+	public void saida() throws ReservaException {
+		RandomAccessFile f=null;
+		try {
+			f=new RandomAccessFile(new File(FILENAME),"rw");
+			search(f);
+			if (this.entrada==null) throw new ReservaException("A habitación non foi ocupada");
+			if (this.saida!=null) throw new ReservaException("A reserva xa non é válida, finalizou o día "+new DateString(this.saida));
+			this.saida=new Date();
+			write(f);
+		} catch(EOFException e) {
+			throw new ReservaException("Non se atopa a reserva");
+		} catch (Exception e) {
+			throw new ReservaException("ERRO cargando reserva ("+e.getMessage()+")");
+		} finally {
+			close(f);
+		}
+	}
+
+	/** write
+		Escribe o obxecto actual no ficheiro na posición actual
+	*/
+	private void write(RandomAccessData f) throws Exception {
+		f.writeInt(numReserva);
+		f.writeInt(habitacion.getNumero());
+		f.writeUTF(cliente.getDni());
+		f.writeLong(entradaReserva.getTime());
+		f.writeLong(saidaReserva.getTime());
+		if (entrada!=null) f.writeLong(entrada.getTime());
+		else					 f.writeLong(0);
+		if (saida!=null) f.writeLong(saida.getTime());
+		else				  f.writeLong(0);
+	}
+
+3.- 
+	/** listaOcupantes
+			Devolve un ArrayList coas reservas dos clientes que están ocupando as habitacións.
+	*/
+	public static ArrayList <Reserva> listaOcupantes() throws Exception {
+		RandomAccessFile f=null;
+		ArrayList <Reserva> lista=new ArrayList <Reserva>();
+		Reserva r=new Reserva();
+		try {
+			f=new RandomAccessFile(new File(FILENAME),"rw");
+			f.seek(4);
+			while(true) {
+				r.read(f);
+				// A habitación foi ocupada, pero non liberada
+				if ((r.getEntrada()!=null) && (r.getSaida()==null)) {
+					r.cliente=new Cliente(r.dni);
+					r.habitacion=new Habitacion(r.nh);
+					lista.add(r);
+					r=new Reserva();
+				}
+			}
+		} catch(EOFException e) {
+		} catch(Exception e) {
+			throw new ReservaException("Error cargando Lista ("+e.getMessage()+")");
+		} finally {
+			f.close();
+		}
+		return lista;
+	}
+
+	/** read
+		Lee unha Reserva do ficheiro na posición actual
+	*/
+	private void read(RandomAccessData f) throws Exception {
+		long date;
+
+		this.numReserva=f.readInt();
+		this.nh=f.readInt();
+		this.dni=f.readUTF();
+		this.entradaReserva=new Date(f.readLong());
+		this.saidaReserva=new Date(f.readLong());
+		date=f.readLong(); 
+		if (date==0) this.entrada=null;
+		else			 this.entrada=new Date(date);
+		date=f.readLong();
+		if (date==0) this.saida=null;
+		else			 this.saida=new Date(date);
+	}
+
+4.- 
+
+package hotel;
+
+public class ClienteException extends Exception {
+	int errcode=0; // Quero distinguir uns erros de outros. De momento so 1 para cliente non atopado
+
+	public ClienteException(String msg) {
+		super(msg);
+		errcode=0;
+	}
+
+	public ClienteException(String msg,int code) {
+		super(msg);
+		errcode=code;
+	}
+	
+	public int getCode() {
+		return errcode;
+	}
+}
+
+
+	/** Constructor
+			Recupera de clientes.dat o cliente co dni indicado, lanzando unha ClienteException si non se atopa.
+	*/
+	public Cliente(String dni) throws ClienteException,IOException {
+		DataInputStream dos=null;
+		try {
+			// Buscamos un cliente con ese DNI
+			dos=new DataInputStream(new FileInputStream(new File("clientes.dat")));
+			while(true) {
+				dni=dos.readUTF();
+				nome=dos.readUTF();
+				apelidos=dos.readUTF();
+				direccion=dos.readUTF();
+				telefono=dos.readUTF();
+				email=dos.readUTF();
+				if (dni.equals(this.dni)) break; // ATOPADO
+			}
+		} catch(EOFException e) {
+			throw new ClienteException("Non se atopa o Cliente",1);
+		} catch(FileNotFoundException e) {
+			throw new ClienteException("Sin Clientes",1);
+		} finally {
+			if (dos!=null) dos.close();
+		}
+	}
+
+	/** Constructor
+			Crea o obxecto Cliente, e o da de alta no ficheiro clientes.dat si o dni xa existe, lanza unha ClienteException.
+	*/
+	public Cliente(String dni,String nome,String apelidos,String direccion,String telefono,String email) throws ClienteException, Exception {
+		this.dni=dni;
+		this.nome=nome;
+		this.apelidos=apelidos;
+		this.direccion=direccion;
+		this.telefono=telefono;
+		this.email=email;
+		save(); // Gardamos o cliente no ficheiro
+	};
+
+	/** save
+		Almacena a información do obxecto Cliente en clientes.dat. Si o dni xa existe, lanza unha ClienteException
+	*/
+	public void save() throws ClienteException {
+		DataOutputStream dos=null;
+		Cliente c=null;
+		try {
+			c=new Cliente(dni); // Buscamos o Cliente con ese DNI
+		} catch (ClienteException e) {
+			if (e.getCode()==1) { // Non o Atopamos
+				try {
+					dos=new DataOutputStream(new FileOutputStream(new File("clientes.dat"),true));
+					dos.writeUTF(dni);
+					dos.writeUTF(nome);
+					dos.writeUTF(apelidos);
+					dos.writeUTF(direccion);
+					dos.writeUTF(telefono);
+					dos.writeUTF(email);
+				} catch (IOException e) {
+					throw new ClienteException("ERRO gardando cliente ("+e.getMessage()+")");
+				}
+			} else throw e;
+		} catch (Exception e) {
+			throw new ClienteException("ERRO gardando cliente ("+e.getMessage()+")");
+		} finally {
+			if (dos!=null) dos.close();
+		}
+	}
+
+
+5.- 
+
+import hotel.*;
+
+import java.util.Scanner;
+import java.util.Date;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+
+class Hotel {
+	private static Scanner kb=new Scanner(System.in);
+
+	/** Visualiza o Menú e Pide as Opcións
+	*/
+	private final static int mainmenu() {
+		int op;
+
+		try {
+			clearConsole();
+			System.out.println("\tXestión de Reservas");
+			System.out.println("\t-------------------\n");
+			System.out.println("\t1.- Reservar");
+			System.out.println("\t2.- Consulta Reserva");
+			System.out.println("\t3.- Entrada en Habitación");
+			System.out.println("\t4.- Saída do Hotel");
+			System.out.println("\t5.- Listado Habitacións Libres");
+			System.out.println("\t6.- Listado de Ocupantes");
+			System.out.println("\t7.- Saír\n\n");
+			System.out.print("\tOpcion: ");
+			int d=Integer.parseInt(kb.nextLine());
+			return d;
+		} catch(Exception e) {
+			return 0;
+		}
+	}
+	
+	/** Crea unha reserva
+	*/
+	private static void do_reserva() {
+		System.out.println("En Desenvolvemento");
+	}
+
+	/**
+		Consulta de Reservas 
+	*/
+	public static void do_consulta() {
+		System.out.println("En Desenvolvemento");
+	}
+
+	/**
+		Efectúa a entrada dun cliente na súa reserva
+	*/
+	public static void do_entrada() {
+		System.out.println("En Desenvolvemento");
+	}
+
+	/**
+		Efectúa a saída dun cliente do hotel
+	*/
+	public static void do_saida() {
+		System.out.println("En Desenvolvemento");
+	}
+
+	/**
+		Obten a lista das habitacións libres
+	*/
+	public static void lista_libres() {
+		System.out.println("En Desenvolvemento");
+	}
+
+	/**
+		Visualiza a lista de ocupacións neste momento
+	*/
+	public static void lista_ocupacion() {
+		ArrayList <Reserva> ocupadas;
+		try {
+			ocupadas=Reserva.listaOcupantes(); // Obtemos a lista de reservas ocupadas, e listamos
+			if (ocupadas.size() > 0) {
+				System.out.println("Lista de Ocupacións: \n");
+				listado(ocupadas);
+			} else {
+				System.out.println("O Hotel non hospeda ningún cliente neste momento");
+			}
+		} catch (Exception e) {
+			System.out.println("Error obtendo habitacións libres ("+e.getMessage()+")");
+		}
+	}
+
+	/**
+			Visualiza un ArrayList en dúas columnas
+	*/
+	public static void listado(ArrayList lh) {
+		int idx=0;
+		for (Object h: lh) {
+			System.out.print(h+"\t");
+			idx++;
+			if ((idx%2)==0) {
+				System.out.println();
+				idx=0;
+			}
+		}
+	}
+
+	/**
+			PROGRAMA PRINCIPAL
+	*/
+	public static void main(String[] args) {
+		int op=0;
+		do {
+			op=mainmenu();
+			switch(op) {
+				case 1:	do_reserva();
+							break;
+				case 2:	do_consulta();
+							break;
+				case 3:	do_entrada();
+							break;
+				case 4:	do_saida();
+							break;
+				case 5:	lista_libres();
+							break;
+				case 6:	lista_ocupacion();
+							break;
+			}
+		} while(op!=7);
+	}
+}
+	

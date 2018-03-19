@@ -1,0 +1,39 @@
+
+class Test {
+
+public static void main(String[] args) {
+
+if (args.length !=1 ) System.out.println("Debes indicar un argumento");
+else if (args[0] == "saludo") System.out.println("Hola !!!");
+else if (args[0] == "despedida") System.out.println("Adiós !!!");
+else System.out.println("No lo entiendo");
+}
+
+}
+*** NON, non funciona porque si comparamos obxectos con == non comparamos o valor do obxecto, se non a súa referencia.
+
+Cando creamos un obxecto co operador new (String s=new String("saludo");) o que facemos e crear o obxecto nunha zona
+de memoria e obter a súa referencia que gardamos na variable s. Deste xeito, si definimos unha variable String s1;
+esa variable NON ALMACENA un obxecto, se non que será capaz de almacenar a referencia dun obxecto.
+Si comparamos dous obxectos con == , o que comparamos son AS SÚAS REFERENCIAS, e decir, comprobamos SI SON O MESMO OBXECTO, 
+non si os obxectos teñen valores considerados "iguais".
+
+Por outra banda, a consideración de cando dous obxectos se consideran iguais é completamente subxectiva, dependendo
+tanto do tipo de obxecto como do punto de vista. Por exemplo, podemos considerar dous obxectos Vehículo iguais si son da mesma
+marca, modelo e cor. Ou podemos considerar que son iguais únicamente si teñen a mesma matrícula.....
+
+A solución adoptada en Java é o uso dun método que se encargue da decisión de cando dous obxectos son iguais, o método
+equals. Varios obxectos da librería estándar Java teñen implementacións válidas deste método, como por exemplo String. Deste
+xeito, a aplicación pdoería quedar así:
+
+class Test {
+
+public static void main(String[] args) {
+
+if (args.length !=1 ) System.out.println("Debes indicar un argumento");
+else if (args[0].equals("saludo")) System.out.println("Hola !!!");
+else if (args[0].equals("despedida")) System.out.println("Adiós !!!");
+else System.out.println("No lo entiendo");
+}
+
+}
